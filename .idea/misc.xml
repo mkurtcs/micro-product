@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="MavenProjectsManager">
+    <option name="originalFiles">
+      <list>
+        <option value="$PROJECT_DIR$/api/pom.xml" />
+        <option value="$PROJECT_DIR$/util/pom.xml" />
+        <option value="$PROJECT_DIR$/microservices/review-service/pom.xml" />
+        <option value="$PROJECT_DIR$/microservices/product-service/pom.xml" />
+        <option value="$PROJECT_DIR$/microservices/recommendation-service/pom.xml" />
+        <option value="$PROJECT_DIR$/microservices/product-composite-service/pom.xml" />
+      </list>
+    </option>
+  </component>
+  <component name="ProjectRootManager" version="2" languageLevel="JDK_16" default="true" project-jdk-name="temurin-16" project-jdk-type="JavaSDK" />
+</project>

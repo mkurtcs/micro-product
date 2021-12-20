@@ -3,7 +3,7 @@ WORKDIR extracted
 ADD ./target/*.jar app.jar
 RUN java -Djarmode=layertools -jar app.jar extract
 
-FROM adoptopenjdk:16_36-jre-hotspot
+FROM adoptopenjdk:11
 WORKDIR application
 COPY --from=builder extracted/dependencies/ ./
 COPY --from=builder extracted/spring-boot-loader/ ./

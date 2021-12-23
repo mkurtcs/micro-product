@@ -2,7 +2,7 @@ version: '2.1'
 
 services:
 
-  product:
+  product: # the name of the microservice. This will also be the hostname of the container in the internal Docker network.
     build: microservices/product-service
     mem_limit: 512m
     environment:
@@ -24,6 +24,6 @@ services:
     build: microservices/product-composite-service
     mem_limit: 512m
     ports:
-      - "8080:8080"
+      - "8080:8080" # because we want to reach the container outside Docker.
     environment:
       - SPRING_PROFILES_ACTIVE=docker

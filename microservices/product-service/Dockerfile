@@ -12,4 +12,6 @@ COPY --from=builder extracted/application/ ./
 
 EXPOSE 8080
 
+ENV JAVA_TOOL_OPTIONS -agentlib:jdwp=transport=dt_socket,address=*:5006,server=y,suspend=n
+
 ENTRYPOINT ["java", "org.springframework.boot.loader.JarLauncher"]

@@ -19,7 +19,7 @@ public interface ProductCompositeService {
     @PostMapping(
             value    = "/product-composite",
             consumes = "application/json")
-    void createProduct(@RequestBody ProductAggregate body);
+    void createCompositeProduct(@RequestBody ProductAggregate body);
 
 
     @Operation(

@@ -1,9 +1,31 @@
-server:
-  port: 7003
+server.port: 7003
+server.error.include-message: always
 
+# Strongly recommend to set this property to "none" in a production environment!
+spring.jpa.hibernate.ddl-auto: update
+
+spring.datasource:
+  url: jdbc:mysql://localhost/review-db
+  username: user
+  password: pwd
+
+# By default, HikariCP is used by Spring Data JPA as the JDBC connection pool.
+# To minimize startup problems on computers with limited hardware resources, the initializationFailTimeout parameter
+# is set to 60 seconds. This means that the Spring Boot application will wait for up to 60 seconds during startup
+# to establish a database connection.
+spring.datasource.hikari.initializationFailTimeout: 60000
+
+logging:
+  level:
+    root: INFO
+    com.mkurt: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
 
 ---
 spring.config.activate.on-profile: docker
 
-server:
-  port: 8080
+server.port: 8080
+
+spring.datasource:
+  url: jdbc:mysql://mysql/review-db

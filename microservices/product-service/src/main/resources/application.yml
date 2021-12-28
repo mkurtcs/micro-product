@@ -1,11 +1,21 @@
 server.port: 7001
+server.error.include-message: always
 
+spring.data.mongodb:
+  host: localhost
+  port: 27017
+  database: product-db
 
-
-
+logging:
+  level:
+    root: INFO
+    com.mkurt: DEBUG
+    org.springframework.data.mongodb.core.MongoTemplate: DEBUG # allow us to see which MongoDB statements are executed in the log.
 
 ---
 spring.config.activate.on-profile: docker
 
-server:
-  port: 8080
+server.port: 8080
+
+# When running inside Docker using the Spring profile, docker, the database is expected to be reachable on mongodb:27017.
+spring.data.mongodb.host: mongodb

@@ -17,11 +17,16 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import static java.util.logging.Level.FINE;
 import static org.springframework.http.HttpMethod.GET;
 
 @Service
@@ -29,7 +34,7 @@ public class ProductCompositeIntegration implements ProductService, ReviewServic
 
     private static final Logger LOG = LoggerFactory.getLogger(ProductCompositeIntegration.class);
 
-    private final RestTemplate restTemplate;
+    private final WebClient webClient;
     private final ObjectMapper objectMapper;
 
     private final String productServiceUrl;
@@ -37,49 +42,44 @@ public class ProductCompositeIntegration implements ProductService, ReviewServic
     private final String recommendationServiceUrl;
 
     public ProductCompositeIntegration(
-            RestTemplate restTemplate,
+            WebClient.Builder webClient,
             ObjectMapper objectMapper,
+
             @Value("${app.product-service.host}") String productServiceHost,
             @Value("${app.product-service.port}") String productServicePort,
+
             @Value("${app.review-service.host}") String reviewServiceHost,
             @Value("${app.review-service.port}") String reviewServicePort,
+
             @Value("${app.recommendation-service.host}") String recommendationServiceHost,
             @Value("${app.recommendation-service.port}") String recommendationServicePort) {
+
         this.productServiceUrl = "http://" + productServiceHost + ":" + productServicePort + "/product";
         this.reviewServiceUrl = "http://" + recommendationServiceHost + ":" + recommendationServicePort + "/recommendation?productId=";
         this.recommendationServiceUrl = "http://" + reviewServiceHost + ":" + reviewServicePort + "/review?productId=";
-        this.restTemplate = restTemplate;
+
+        this.webClient = webClient.build();
         this.objectMapper = objectMapper;
     }
 
 
     @Override
-    public Product getProduct(int productId) {
+    public Mono<Product> getProduct(int productId) {
 
-        String requestUrl = productServiceUrl + "/" + productId;
-        LOG.debug("Will call getProduct API on URL: {}", requestUrl);
+        String url = productServiceUrl + "/" + productId;
+        LOG.debug("Will call the getProduct API on URL: {}", url);
 
-
-        try {
-            Product product = restTemplate.getForObject(requestUrl, Product.class);
-            LOG.debug("Found a product with id: {}", product.getProductId());
-            return product;
-        } catch (HttpClientErrorException e) {
-            switch (e.getStatusCode()) {
-                case NOT_FOUND:
-                    throw new NotFoundException(getErrorMessage(e));
-                case UNPROCESSABLE_ENTITY:
-                    throw new InvalidInputException(getErrorMessage(e));
-                default:
-                    LOG.warn("Got an unexpected HTTP error: {}, will rethrow it", e.getStatusCode());
-                    LOG.warn("Error body: {}", e.getResponseBodyAsString());
-                    throw e;
-            }
-        }
+        return webClient
+                .get()
+                .uri(url)
+                .retrieve()
+                .bodyToMono(Product.class)
+                .log(LOG.getName(), FINE)
+                .onErrorMap(WebClientResponseException.class, this::handleException);
     }
 
     @Override
-    public Product createProduct(Product body) {
+    public Mono<Product> createProduct(Product body) {
 
         try {
             String url = productServiceUrl;
@@ -96,7 +96,7 @@ public class ProductCompositeIntegration implements ProductService, ReviewServic
     }
 
     @Override
-    public void deleteProduct(int productId) {
+    public Mono<Void> deleteProduct(int productId) {
         try {
             String url = productServiceUrl + "/" + productId;
             LOG.debug("Will call the deleteProduct API on URL: {}", url);
@@ -109,7 +109,7 @@ public class ProductCompositeIntegration implements ProductService, ReviewServic
     }
 
     @Override
-    public List<Recommendation> getRecommendations(int productId) {
+    public Flux<Recommendation> getRecommendations(int productId) {
 
         try {
             String url = recommendationServiceUrl + productId;
@@ -129,7 +129,7 @@ public class ProductCompositeIntegration implements ProductService, ReviewServic
     }
 
     @Override
-    public Recommendation createRecommendation(Recommendation body) {
+    public Mono<Recommendation> createRecommendation(Recommendation body) {
 
         try {
             String url = recommendationServiceUrl;
@@ -146,7 +146,7 @@ public class ProductCompositeIntegration implements ProductService, ReviewServic
     }
 
     @Override
-    public void deleteRecommendations(int productId) {
+    public Mono<Void> deleteRecommendations(int productId) {
         try {
             String url = recommendationServiceUrl + "?productId=" + productId;
             LOG.debug("Will call the deleteRecommendations API on URL: {}", url);
@@ -159,7 +159,7 @@ public class ProductCompositeIntegration implements ProductService, ReviewServic
     }
 
     @Override
-    public List<Review> getReviews(int productId) {
+    public Flux<Review> getReviews(int productId) {
 
         try {
             String url = reviewServiceUrl + "?productId=" + productId;
@@ -179,7 +179,7 @@ public class ProductCompositeIntegration implements ProductService, ReviewServic
     }
 
     @Override
-    public Review createReview(Review body) {
+    public Mono<Review> createReview(Review body) {
         try {
             String url = reviewServiceUrl;
             LOG.debug("Will post a new review to URL: {}", url);
@@ -195,7 +195,7 @@ public class ProductCompositeIntegration implements ProductService, ReviewServic
     }
 
     @Override
-    public void deleteReviews(int productId) {
+    public Mono<Void> deleteReviews(int productId) {
         try {
             String url = reviewServiceUrl + "?productId=" + productId;
             LOG.debug("Will call the deleteReviews API on URL: {}", url);
@@ -223,7 +223,31 @@ public class ProductCompositeIntegration implements ProductService, ReviewServic
         }
     }
 
-    private String getErrorMessage(HttpClientErrorException ex) {
+    private Throwable handleException(Throwable ex) {
+
+        if (!(ex instanceof WebClientResponseException)) {
+            LOG.warn("Got a unexpected error: {}, will rethrow it", ex.toString());
+            return ex;
+        }
+
+        WebClientResponseException wcre = (WebClientResponseException)ex;
+
+        switch (wcre.getStatusCode()) {
+
+            case NOT_FOUND:
+                return new NotFoundException(getErrorMessage(wcre));
+
+            case UNPROCESSABLE_ENTITY :
+                return new InvalidInputException(getErrorMessage(wcre));
+
+            default:
+                LOG.warn("Got an unexpected HTTP error: {}, will rethrow it", wcre.getStatusCode());
+                LOG.warn("Error body: {}", wcre.getResponseBodyAsString());
+                return ex;
+        }
+    }
+
+    private String getErrorMessage(WebClientResponseException ex) {
         try {
             return objectMapper.readValue(ex.getResponseBodyAsString(), HttpErrorInfo.class).getMessage();
         } catch (IOException ioex) {

@@ -4,7 +4,6 @@ import com.mkurt.api.composite.*;
 import com.mkurt.api.core.product.Product;
 import com.mkurt.api.core.recommendation.Recommendation;
 import com.mkurt.api.core.review.Review;
-import com.mkurt.api.exception.NotFoundException;
 import com.mkurt.util.http.ServiceUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

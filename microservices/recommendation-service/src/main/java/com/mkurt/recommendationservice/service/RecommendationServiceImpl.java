@@ -79,7 +79,7 @@ public class RecommendationServiceImpl implements RecommendationService {
         if (productId < 1) {
             throw new InvalidInputException("Invalid productId: " + productId);
         }
-
+        LOG.debug("deleteRecommendations: tries to delete recommendations for the product with productId: {}", productId);
         return repository.deleteAll(repository.findByProductId(productId));
     }
 }

@@ -35,14 +35,17 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public Mono<Product> createProduct(Product body) {
 
+        if (body.getProductId() < 1) {
+            throw new InvalidInputException("Invalid productId: " +
+                    body.getProductId());
+        }
+
         ProductEntity entity = mapper.apiToEntity(body);
 
         return repository.save(entity)
                 .log(LOG.getName(), Level.FINE)
-                .onErrorMap(
-                        DuplicateKeyException.class,
-                        ex -> new InvalidInputException("Duplicate key, product id: " + body.getProductId())
-                )
+                .onErrorMap(DuplicateKeyException.class,
+                            ex -> new InvalidInputException("Duplicate key, product id: " + body.getProductId()))
                 .map(mapper::entityToApi);
     }
 
@@ -52,6 +55,8 @@ public class ProductServiceImpl implements ProductService {
         if (productId < 1) {
             throw new InvalidInputException("Invalid productId: " + productId);
         }
+
+        LOG.info("Will get product info for id={}", productId);
 
         return repository.findByProductId(productId)
                 .switchIfEmpty(Mono.error(new NotFoundException("No product found for id: " + productId)))

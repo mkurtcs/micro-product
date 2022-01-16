@@ -3,6 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/api/api.iml" filepath="$PROJECT_DIR$/api/api.iml" />
+      <module fileurl="file://$PROJECT_DIR$/spring-cloud/eureka-server/eureka-server.iml" filepath="$PROJECT_DIR$/spring-cloud/eureka-server/eureka-server.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/micro-product.iml" filepath="$PROJECT_DIR$/.idea/micro-product.iml" />
       <module fileurl="file://$PROJECT_DIR$/microservices/product-composite-service/product-composite-service.iml" filepath="$PROJECT_DIR$/microservices/product-composite-service/product-composite-service.iml" />
       <module fileurl="file://$PROJECT_DIR$/microservices/product-service/product-service.iml" filepath="$PROJECT_DIR$/microservices/product-service/product-service.iml" />

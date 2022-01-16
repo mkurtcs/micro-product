@@ -14,12 +14,14 @@ services:
       rabbitmq:
         condition: service_healthy
 
-  product-p1:
+# We have a separate Docker Compose file (this) prepared for using RabbitMQ with two partitions per topic: docker-compose-partitions.yml.
+# It will also start two instances per core microservice, one for each partition. For example, a second product instance is configured as follows:
+  product-p1: # The second product instance will only process asynchronous events; it will not respond to API calls. Since it has a different name, product-p1 (also used as its DNS name), it will not respond to calls to a URL starting with http://product:8080
     container_name: product-p1
     build: microservices/product-service
     mem_limit: 512m
     environment:
-      - SPRING_PROFILES_ACTIVE=docker,streaming_partitioned,streaming_instance_1
+      - SPRING_PROFILES_ACTIVE=docker,streaming_partitioned,streaming_instance_1 # To make all microservice instances aware that they will use partitions, we have added the Spring profile streaming_partitioned to their environment variable SPRING_PROFILES_ACTIVE
     depends_on:
       mongodb:
         condition: service_healthy

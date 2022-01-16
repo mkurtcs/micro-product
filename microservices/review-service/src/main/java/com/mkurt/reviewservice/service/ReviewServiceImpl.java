@@ -29,7 +29,7 @@ public class ReviewServiceImpl implements ReviewService {
     private final ReviewRepository repository;
     private final ReviewMapper mapper;
     private final ServiceUtil serviceUtil;
-    private final Scheduler jdbcScheduler;
+    private final Scheduler jdbcScheduler; /** When we must use blocking code, for example, when using Spring Data for JPA, we can encapsulate the processing of the blocking code by scheduling the processing of it in a dedicated thread pool. */
 
     @Autowired
     public ReviewServiceImpl(ReviewRepository repository,

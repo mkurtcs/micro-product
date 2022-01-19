@@ -108,3 +108,11 @@ services:
     mem_limit: 512m
 #    ports:
 #      - "8761:8761" # we are reaching this via edge server only. so this port is not exposed.
+
+  gateway:
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    build: spring-cloud/gateway
+    mem_limit: 512m
+    ports:
+      - "8080:8080"

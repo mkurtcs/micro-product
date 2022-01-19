@@ -48,9 +48,9 @@ services:
     container_name: product-composite
     build: microservices/product-composite-service
     mem_limit: 512m
-    ports:
-      - "8080:8080" # because we want to reach the container outside Docker.
-      - "5005:5005" # remote debug port
+#    ports:
+#      - "8080:8080" # because we want to reach the container outside Docker. # we are reaching this via edge server only. so this port is not exposed.
+#      - "5005:5005" # remote debug port
     environment:
       - SPRING_PROFILES_ACTIVE=docker
     depends_on:
@@ -103,7 +103,8 @@ services:
       retries: 60
 
   eureka:
+    container_name: eureka
     build: spring-cloud/eureka-server
     mem_limit: 512m
-    ports:
-      - "8761:8761"
+#    ports:
+#      - "8761:8761" # we are reaching this via edge server only. so this port is not exposed.

@@ -1,4 +1,4 @@
-package com.mkurt.eurekaserver;
+package com.mkurt.springcloud.eurekaserver;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

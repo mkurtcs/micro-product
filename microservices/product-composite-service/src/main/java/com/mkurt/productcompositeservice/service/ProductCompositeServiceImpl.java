@@ -8,9 +8,15 @@ import com.mkurt.util.http.ServiceUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.context.ReactiveSecurityContextHolder;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextImpl;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -21,6 +27,7 @@ import static java.util.logging.Level.FINE;
 public class ProductCompositeServiceImpl implements ProductCompositeService {
 
     private static final Logger LOG = LoggerFactory.getLogger(ProductCompositeServiceImpl.class);
+    private final SecurityContext nullSecCtx = new SecurityContextImpl();
 
     private final ServiceUtil serviceUtil;
     private final ProductCompositeIntegration integration;
@@ -36,6 +43,8 @@ public class ProductCompositeServiceImpl implements ProductCompositeService {
 
         try {
             List<Mono> monoList = new ArrayList<>();
+
+            monoList.add(getLogAuthorizationInfoMono());
 
             LOG.debug("createCompositeProduct: creates a new composite entity for productId: {}", body.getProductId());
 
@@ -79,12 +88,11 @@ public class ProductCompositeServiceImpl implements ProductCompositeService {
         LOG.info("Will get composite product info for product.id={}", productId);
         return Mono.zip(
                 values -> createProductAggregate(
-                        (Product) values[0], (List<Recommendation>) values[1], (List<Review>) values[2], serviceUtil.getServiceAddress()
-                ),
+                        (SecurityContext) values[0], (Product) values[1], (List<Recommendation>) values[2], (List<Review>) values[3], serviceUtil.getServiceAddress()),
+                getSecurityContextMono(),
                 integration.getProduct(productId),
                 integration.getRecommendations(productId).collectList(),
-                integration.getReviews(productId).collectList()
-        )
+                integration.getReviews(productId).collectList())
                 .doOnError(ex -> LOG.warn("getCompositeProduct failed: {}", ex.toString()))
                 .log(LOG.getName(), FINE);
     }
@@ -110,7 +118,10 @@ public class ProductCompositeServiceImpl implements ProductCompositeService {
         }
     }
 
-    private ProductAggregate createProductAggregate(Product product, List<Recommendation> recommendations, List<Review> reviews, String serviceAddress) {
+    private ProductAggregate createProductAggregate(
+            SecurityContext sc, Product product, List<Recommendation> recommendations, List<Review> reviews, String serviceAddress) {
+
+        logAuthorizationInfo(sc);
 
         // 1. Setup product info
         int productId = product.getProductId();
@@ -136,5 +147,45 @@ public class ProductCompositeServiceImpl implements ProductCompositeService {
         ServiceAddresses serviceAddresses = new ServiceAddresses(serviceAddress, productAddress, reviewAddress, recommendationAddress);
 
         return new ProductAggregate(productId, name, weight, recommendationSummaries, reviewSummaries, serviceAddresses);
+    }
+
+    private Mono<SecurityContext> getLogAuthorizationInfoMono() {
+        return getSecurityContextMono()
+                .doOnNext(sc -> logAuthorizationInfo(sc));
+    }
+
+    private Mono<SecurityContext> getSecurityContextMono() {
+        return ReactiveSecurityContextHolder
+                .getContext()
+                .defaultIfEmpty(nullSecCtx);
+    }
+
+    /** A method, logAuthorizationInfo(), has been added to log relevant parts from the JWT-encoded access token upon
+     * each call to the API. The access token can be acquired using the standard Spring Security, SecurityContext,
+     * which, in a reactive environment, can be acquired using the static helper method,
+     * ReactiveSecurityContextHolder.getContext() */
+    private void logAuthorizationInfo(SecurityContext sc) {
+        if (sc != null && sc.getAuthentication() != null && sc.getAuthentication() instanceof JwtAuthenticationToken) {
+            Jwt jwtToken = ((JwtAuthenticationToken)sc.getAuthentication()).getToken();
+            logAuthorizationInfo(jwtToken);
+        } else {
+            LOG.warn("No JWT based Authentication supplied, running tests are we?");
+        }
+    }
+
+    private void logAuthorizationInfo(Jwt jwt) {
+        if (jwt == null) {
+            LOG.warn("No JWT supplied, running tests are we?");
+        } else {
+            if (LOG.isDebugEnabled()) {
+                URL issuer = jwt.getIssuer();
+                List<String> audience = jwt.getAudience();
+                Object subject = jwt.getClaims().get("sub");
+                Object scopes = jwt.getClaims().get("scope");
+                Object expires = jwt.getClaims().get("exp");
+
+                LOG.debug("Authorization info: Subject: {}, scopes: {}, expires {}: issuer: {}, audience: {}", subject, scopes, expires, issuer, audience);
+            }
+        }
     }
 }

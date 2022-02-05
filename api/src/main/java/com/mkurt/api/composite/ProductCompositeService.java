@@ -3,10 +3,13 @@ package com.mkurt.api.composite;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
+// The OpenAPI Specification of the API has been enhanced to require that the security schema security_auth is applied.
+@SecurityRequirement(name = "security_auth") // check OpenApiConfig.class
 @Tag(name = "ProductComposite", description = "REST API for composite product information.")
 public interface ProductCompositeService {
 

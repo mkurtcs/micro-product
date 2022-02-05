@@ -28,3 +28,6 @@ public class SecurityConfig {
 }
 
 // By convention, OAuth 2.0 scopes need to be prefixed with SCOPE_ when checked for authority using Spring Security.
+
+/** both the edge server and the product-composite service can act as OAuth 2.0 resource servers,
+ * and the Swagger UI component can act as an OAuth client. */

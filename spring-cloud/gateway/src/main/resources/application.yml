@@ -2,11 +2,11 @@ server.port: 8443 # To indicate that the edge server talks HTTPS and not HTTP, w
 
 spring.application.name: gateway
 
-server.ssl:
-  key-store-type: PKCS12
-  key-store: classpath:keystore/edge.p12
-  key-store-password: password
-  key-alias: localhost
+#server.ssl:
+#  key-store-type: PKCS12
+#  key-store: classpath:keystore/edge.p12
+#  key-store-password: password
+#  key-alias: localhost
 
 app:
   eureka-username: u
@@ -31,10 +31,30 @@ spring.cloud.gateway.routes:
     predicates:
       - Path=/product-composite/** # - Path=/product-composite/** is used to specify what requests this route should match. ** matches zero or more elements in the path.
 
+  - id: oauth2-server
+    uri: lb://auth-server
+    predicates:
+      - Path=/oauth2/**
+
+  - id: oauth2-login
+    uri: lb://auth-server
+    predicates:
+      - Path=/login/**
+
+  - id: oauth2-error
+    uri: lb://auth-server
+    predicates:
+      - Path=/error/**
+
   - id: product-composite-swagger-ui # To be able to route requests to the Swagger UI
     uri: lb://product-composite # Requests sent to the edge server with a URI starting with /openapi/ will be directed to the product-composite service.
     predicates:
       - Path=/openapi/**
+
+  - id: product-composite-swagger-ui-webjars
+    uri: lb://product-composite
+    predicates:
+      - Path=/webjars/**
 
   - id: eureka-api # should be handled as a call to the Eureka API.
     uri: http://${app.eureka-server}:8761
@@ -78,6 +98,7 @@ spring.cloud.gateway.routes:
     filters:
       - SetPath=/501
 
+# The authorization server's OIDC discovery endpoint has been registered here.
 spring.security.oauth2.resourceserver.jwt.issuer-uri: http://${app.auth-server}:9999
 
 management.endpoint.health.show-details: "ALWAYS"

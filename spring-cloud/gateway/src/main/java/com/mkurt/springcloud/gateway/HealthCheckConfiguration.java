@@ -1,4 +1,4 @@
-package com.mkurt.gateway;
+package com.mkurt.springcloud.gateway;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,7 +30,7 @@ public class HealthCheckConfiguration {
     }
 
     @Bean
-    ReactiveHealthContributor healthcheckMicroservices() {
+    ReactiveHealthContributor healthCheckMicroservices() {
 
         final Map<String, ReactiveHealthIndicator> registry = new LinkedHashMap<>();
 

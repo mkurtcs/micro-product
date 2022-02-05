@@ -11,6 +11,7 @@
         <option value="$PROJECT_DIR$/microservices/product-composite-service/pom.xml" />
         <option value="$PROJECT_DIR$/spring-cloud/eureka-server/pom.xml" />
         <option value="$PROJECT_DIR$/spring-cloud/gateway/pom.xml" />
+        <option value="$PROJECT_DIR$/spring-cloud/authorization-server/pom.xml" />
       </list>
     </option>
   </component>

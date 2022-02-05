@@ -76,21 +76,6 @@ public class ProductCompositeServiceApplication {
 		return Schedulers.newBoundedElastic(threadPoolSize, taskQueueSize, "publish-pool");
 	}
 
-//	@Autowired
-//	ProductCompositeIntegration integration;
-//
-//	@Bean
-//	ReactiveHealthContributor coreServices() {
-//
-//		final Map<String, ReactiveHealthIndicator> registry = new LinkedHashMap<>();
-//
-//		registry.put("product", () -> integration.getProductHealth());
-//		registry.put("recommendation", () -> integration.getRecommendationHealth());
-//		registry.put("review", () -> integration.getReviewHealth());
-//
-//		return CompositeReactiveHealthContributor.fromMap(registry);
-//	}
-
 	@Bean
 	@LoadBalanced
 	public WebClient.Builder loadBalancedWebClientBuilder() {

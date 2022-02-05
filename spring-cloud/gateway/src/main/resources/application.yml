@@ -24,6 +24,8 @@ eureka:
     leaseRenewalIntervalInSeconds: 5
     leaseExpirationDurationInSeconds: 5
 
+
+################################### ROUTES ###################################
 spring.cloud.gateway.routes:
 
   - id: product-composite # The name of the route is product-composite

@@ -1,0 +1,46 @@
+server.port: 7000
+server.error.include-message: always
+
+spring.cloud.stream:
+  default.contentType: application/json
+  bindings:
+    products-out-0:
+      destination: products
+      producer: # When using Spring Cloud Stream with Kafka, events are retained in the topics, even after consumers have processed them. However, when using Spring Cloud Stream with RabbitMQ, the events are removed after they have been processed successfully.
+        required-groups: auditGroup # To be able to see what events have been published on each topic, Spring Cloud Stream is configured to save published events in a separate consumer group, auditGroup, per topic. For the products topic, the configuration looks like this:
+    recommendations-out-0:
+      destination: recommendations
+      producer:
+        required-groups: auditGroup
+    reviews-out-0:
+      destination: reviews
+      producer:
+        required-groups: auditGroup
+
+
+logging:
+  level:
+    root: INFO
+    com.mkurt: DEBUG
+    org.springframework.web.server.adapter.HttpWebHandlerAdapter: TRACE
+
+---
+spring.config.activate.on-profile: docker
+server.port: 8080
+
+---
+spring.config.activate.on-profile: streaming_partitioned
+
+# This configuration means that the key will be taken from the message header with the name partitionKey
+# and that two partitions will be used.
+spring.cloud.stream.bindings.products-out-0.producer:
+  partition-key-expression: headers['partitionKey']
+  partition-count: 2
+
+spring.cloud.stream.bindings.recommendations-out-0.producer:
+  partition-key-expression: headers['partitionKey']
+  partition-count: 2
+
+spring.cloud.stream.bindings.reviews-out-0.producer:
+  partition-key-expression: headers['partitionKey']
+  partition-count: 2

@@ -30,7 +30,9 @@ import static org.springframework.data.domain.Sort.Direction.ASC;
  * to use a containerized database, we have to disable this feature. For the @DataMongoTest annotation, this can be done
  * by using the excludeAutoConfiguration parameter and specifying that the class EmbeddedMongoAutoConfiguration will be excluded.
  */
-@DataMongoTest(excludeAutoConfiguration = EmbeddedMongoAutoConfiguration.class)
+@DataMongoTest(
+        excludeAutoConfiguration = EmbeddedMongoAutoConfiguration.class,
+        properties = {"spring.cloud.config.enabled=false"})
 class PersistenceTests extends MongoDbTestBase {
 
     @Autowired

@@ -19,7 +19,7 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-@DataJpaTest
+@DataJpaTest(properties = {"spring.jpa.hibernate.ddl-auto=update", "spring.cloud.config.enabled=false"})
 /** By default, Spring Boot configures the tests to roll back updates to the SQL database to minimize
  * the risk of negative side effects on other tests. In our case, this behavior will cause some of the tests to fail.
  * Therefore, automatic rollback is disabled with the class level annotation @Transactional(propagation = NOT_SUPPORTED) **/

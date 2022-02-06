@@ -23,7 +23,8 @@ import static org.springframework.http.HttpStatus.*;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static reactor.core.publisher.Mono.just;
 
-@SpringBootTest(webEnvironment = RANDOM_PORT, properties = {"eureka.client.enabled=false"})
+@SpringBootTest(webEnvironment = RANDOM_PORT,
+		properties = {"eureka.client.enabled=false", "spring.cloud.config.enabled=false"})
 class ProductServiceApplicationTests extends MongoDbTestBase {
 
 	@Autowired

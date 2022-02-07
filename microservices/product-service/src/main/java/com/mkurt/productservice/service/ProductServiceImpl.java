@@ -14,6 +14,8 @@ import org.springframework.dao.DuplicateKeyException;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 
+import java.time.Duration;
+import java.util.Random;
 import java.util.logging.Level;
 
 @RestController
@@ -50,7 +52,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public Mono<Product> getProduct(int productId) {
+    public Mono<Product> getProduct(int productId, int delay, int faultPercent) {
 
         if (productId < 1) {
             throw new InvalidInputException("Invalid productId: " + productId);
@@ -59,10 +61,27 @@ public class ProductServiceImpl implements ProductService {
         LOG.info("Will get product info for id={}", productId);
 
         return repository.findByProductId(productId)
+                .map(productEntity -> throwErrorIfBadLuck(productEntity, faultPercent))
+                .delayElement(Duration.ofSeconds(delay))
                 .switchIfEmpty(Mono.error(new NotFoundException("No product found for id: " + productId)))
                 .log(LOG.getName(), Level.FINE)
                 .map(mapper::entityToApi)
                 .map(this::setServiceAddress);
+    }
+
+    private ProductEntity throwErrorIfBadLuck(ProductEntity productEntity, int faultPercent) {
+        if(faultPercent == 0)
+            return productEntity;
+        int randomThreshold = new Random().nextInt(100 - 1) + 1;
+
+        if (faultPercent < randomThreshold) {
+            LOG.debug("We got lucky, no error occurred, {} < {}", faultPercent, randomThreshold);
+        } else {
+            LOG.debug("Bad luck, an error occurred, {} >= {}", faultPercent, randomThreshold);
+            throw new RuntimeException("Something went wrong...");
+        }
+
+        return productEntity;
     }
 
     private Product setServiceAddress(Product product) {

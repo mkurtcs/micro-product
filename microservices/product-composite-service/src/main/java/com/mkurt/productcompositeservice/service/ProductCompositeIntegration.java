@@ -11,6 +11,11 @@ import com.mkurt.api.event.Event;
 import com.mkurt.api.exception.InvalidInputException;
 import com.mkurt.api.exception.NotFoundException;
 import com.mkurt.util.http.HttpErrorInfo;
+import com.mkurt.util.http.ServiceUtil;
+import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.retry.annotation.Retry;
+import io.github.resilience4j.timelimiter.annotation.TimeLimiter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,11 +27,14 @@ import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
+import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 
 import java.io.IOException;
+import java.net.URI;
+import java.util.Optional;
 
 import static com.mkurt.api.event.Event.Type.CREATE;
 import static com.mkurt.api.event.Event.Type.DELETE;
@@ -49,18 +57,22 @@ public class ProductCompositeIntegration implements ProductService, Recommendati
 
     private final Scheduler publishEventScheduler;
 
+    private final ServiceUtil serviceUtil;
+
     @Autowired
     public ProductCompositeIntegration(
             @Qualifier("publishEventScheduler") Scheduler publishEventScheduler,
 
             WebClient.Builder webClient,
             ObjectMapper mapper,
-            StreamBridge streamBridge
+            StreamBridge streamBridge,
+            ServiceUtil serviceUtil
     ) {
         this.publishEventScheduler = publishEventScheduler;
         this.webClient = webClient.build();
         this.mapper = mapper;
         this.streamBridge = streamBridge;
+        this.serviceUtil = serviceUtil;
     }
 
     @Override
@@ -75,9 +87,19 @@ public class ProductCompositeIntegration implements ProductService, Recommendati
          * in the review microservice. See the section on Dealing with blocking code for details. */
     }
 
+    // The circuit breaker is triggered by an exception, not by a timeout itself.
+    // To be able to trigger the circuit breaker after a timeout, we should add a time limiter.
+    @Retry(name = "product")
+    @TimeLimiter(name = "product")
+    @CircuitBreaker(name = "product", fallbackMethod = "getProductFallBackValue")
     @Override
-    public Mono<Product> getProduct(int productId) {
-        String url = PRODUCT_SERVICE_URL + "/product/" + productId;
+    public Mono<Product> getProduct(int productId, int delay, int faultPercent) {
+
+        URI url = UriComponentsBuilder.fromUriString(PRODUCT_SERVICE_URL + "/product/" + productId)
+                .queryParamIfPresent("delay", Optional.of(delay))
+                .queryParamIfPresent("faultPercent", Optional.of(faultPercent))
+                .build().toUri();
+
         LOG.debug("Will call the getProduct API on URL: {}", url);
 
         return webClient
@@ -87,6 +109,20 @@ public class ProductCompositeIntegration implements ProductService, Recommendati
                 .bodyToMono(Product.class)
                 .log(LOG.getName(), FINE)
                 .onErrorMap(WebClientResponseException.class, this::handleException);
+    }
+
+    // CallNotPermittedException is thrown by CircuitBreaker when circuit is open.
+    private Mono<Product> getProductFallBackValue(int productId, int delay, int faultPercent, CallNotPermittedException e) {
+        LOG.warn("Creating a fail-fast fallback product for productId = {}, " +
+                        "delay = {}, faultPercent = {} and exception = {} ",
+                productId, delay, faultPercent, e.toString());
+
+        if(productId == 13) { // just for point that productId 13 is not found in the cache.
+            String errMsg = "Product Id: " + productId + " not found in fallback cache!";
+            LOG.warn(errMsg);
+            throw new NotFoundException(errMsg);
+        }
+        return Mono.just(new Product(productId, "Fallback product" + productId, productId, serviceUtil.getServiceAddress()));
     }
 
     @Override
@@ -206,14 +242,14 @@ public class ProductCompositeIntegration implements ProductService, Recommendati
             return ex;
         }
 
-        WebClientResponseException wcre = (WebClientResponseException)ex;
+        WebClientResponseException wcre = (WebClientResponseException) ex;
 
         switch (wcre.getStatusCode()) {
 
             case NOT_FOUND:
                 return new NotFoundException(getErrorMessage(wcre));
 
-            case UNPROCESSABLE_ENTITY :
+            case UNPROCESSABLE_ENTITY:
                 return new InvalidInputException(getErrorMessage(wcre));
 
             default:

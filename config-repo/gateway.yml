@@ -57,6 +57,7 @@ spring.cloud.gateway.routes:
       - SetPath=/501
 
 
+spring.sleuth.reactor.instrumentation-type: decorate-on-last # to enable Sleuth to track trace IDs correctly: https://docs.spring.io/spring-cloud-sleuth/docs/3.0.1/reference/html/integrations.html#sleuth-reactor-integration
 
 # Configure log levels so that we can see log messages from interesting parts of the internal processing
 # in the Spring Cloud Gateway, for example, how it decides where to route incoming requests to:

@@ -21,6 +21,8 @@ spring.cloud.stream.kafka.binder:
   defaultBrokerPort: 9092
 
 spring.cloud.stream.defaultBinder: rabbit
+spring.zipkin.sender.type: rabbit # In the default profile, it is specified that trace information will be sent to Zipkin using RabbitMQ:
+spring.sleuth.sampler.probability: 1.0 # By default, Spring Cloud Sleuth only sends 10% of the traces to Zipkin. To ensure that all traces are sent to Zipkin, this property is added in the default profile:
 
 # WARNING: Exposing all management endpoints over http should only be used during development, must be locked down in production!
 management.endpoint.health.show-details: "ALWAYS"
@@ -42,3 +44,4 @@ management.health.rabbit.enabled: false
 spring.cloud.stream.defaultBinder: kafka
 spring.kafka.bootstrap-servers: kafka:9092
 spring.cloud.stream.kafka.binder.replication-factor: 1
+spring.zipkin.sender.type: kafka # When sending traces to Zipkin using Kafka, the Spring profile kafka will be used. In the kafka profile, we override the setting in the default profile so that trace information is sent to Zipkin using Kafka:

@@ -141,11 +141,11 @@ services:
     build: spring-cloud/eureka-server
     mem_limit: 512m
     environment:
-      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_PROFILES_ACTIVE=docker,kafka
 
   gateway:
     environment:
-      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_PROFILES_ACTIVE=docker,kafka
     build: spring-cloud/gateway
     mem_limit: 512m
     ports:
@@ -159,3 +159,14 @@ services:
       - ENCRYPT_KEY=${CONFIG_SERVER_ENCRYPT_KEY}
     volumes:
       - $PWD/config-repo:/config-repo
+
+  zipkin:
+    image: openzipkin/zipkin:2.23.2
+    mem_limit: 1024m
+    environment:
+      - STORAGE_TYPE=mem
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092 # used to specify that Zipkin will use Kafka to receive trace information and that Zipkin will connect to Kafka using the hostname kafka and the port 9092
+    ports:
+      - 9411:9411
+    depends_on:
+      - kafka

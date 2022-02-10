@@ -6,8 +6,8 @@ services:
     container_name: product
     build: microservices/product-service
     mem_limit: 512m
-#    ports:
-#    - "5006:5006" # remote debug port
+    ports:
+    - "5006:5006" # remote debug port
     environment:
       - SPRING_PROFILES_ACTIVE=docker
     depends_on:
@@ -48,9 +48,9 @@ services:
     container_name: product-composite
     build: microservices/product-composite-service
     mem_limit: 512m
-#    ports:
+    ports:
 #      - "8080:8080" # because we want to reach the container outside Docker. # we are reaching this via edge server only. so this port is not exposed.
-#      - "5005:5005" # remote debug port
+      - "5005:5005" # remote debug port
     environment:
       - SPRING_PROFILES_ACTIVE=docker
     depends_on:
@@ -127,3 +127,15 @@ services:
       - ENCRYPT_KEY=${CONFIG_SERVER_ENCRYPT_KEY} # used to specify the symmetric encryption key that will be used by the config server to encrypt and decrypt sensitive configuration information.
     volumes:
       - $PWD/config-repo:/config-repo # volume declaration will make the config-repo folder accessible in the Docker container at /config-repo
+
+  zipkin:
+    image: openzipkin/zipkin:2.23.2
+    mem_limit: 1024m
+    environment:
+      - RABBIT_ADDRESSES=rabbitmq # The RABBIT_ADDRESSES=rabbitmq environment variable is used to specify that Zipkin will receive trace information using RabbitMQ and that Zipkin will connect to RabbitMQ using the hostname rabbitmq
+      - STORAGE_TYPE=mem
+    ports:
+      - 9411:9411 # Zipkin exposes the HTTP port 9411 for web browsers to access its web user interface.
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
